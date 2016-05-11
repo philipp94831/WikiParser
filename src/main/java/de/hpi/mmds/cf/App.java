@@ -1,14 +1,18 @@
 package de.hpi.mmds.cf;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.zip.GZIPInputStream;
 
 import javax.xml.stream.XMLStreamException;
 
+import org.apache.commons.io.FileUtils;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -24,14 +28,24 @@ public class App {
 			File out = new File("out.txt");
 			out.delete();
 			DumpHandler handler = new DumpHandler(new DumpWriter(out));
+			List<Element> files = new ArrayList<>();
 			for (Element element : elements) {
 				String name = element.ownText();
 				if (name.startsWith("enwiki-20160407-stub-meta-history") && name.endsWith(".xml.gz")) {
-					String url = element.attr("href");
-					URL file = new URL("https://dumps.wikimedia.org" + url);
-					InputStream in = new GZIPInputStream(file.openStream());
-					handler.parse(in);
+					files.add(element);
 				}
+			}
+			int i = 1;
+			for (Element element : files) {
+				String name = element.ownText();
+				System.out.println("Parsing file " + i + "/" + files.size() + ": " + name);
+				String _url = element.attr("href");
+				URL url = new URL("https://dumps.wikimedia.org" + _url);
+				File file = new File("dumps/" + name);
+				FileUtils.copyURLToFile(url, file);
+				InputStream in = new GZIPInputStream(new FileInputStream(file));
+				handler.parse(in);
+				i++;
 			}
 		} catch (FileNotFoundException e) {
 			// TODO Auto-generated catch block
