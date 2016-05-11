@@ -39,10 +39,12 @@ public class App {
 			for (Element element : files) {
 				String name = element.ownText();
 				System.out.println("Parsing file " + i + "/" + files.size() + ": " + name);
-				String _url = element.attr("href");
-				URL url = new URL("https://dumps.wikimedia.org" + _url);
 				File file = new File("dumps/" + name);
-				FileUtils.copyURLToFile(url, file);
+				if (!file.exists()) {
+					String _url = element.attr("href");
+					URL url = new URL("https://dumps.wikimedia.org" + _url);
+					FileUtils.copyURLToFile(url, file);
+				}
 				InputStream in = new GZIPInputStream(new FileInputStream(file));
 				handler.parse(in);
 				i++;
