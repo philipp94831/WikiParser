@@ -1,17 +1,13 @@
 package de.hpi.mmds.cf;
 
-import java.io.InputStream;
 import java.util.Stack;
 
-import javax.xml.stream.XMLStreamException;
-import javax.xml.stream.events.XMLEvent;
+import javax.xml.namespace.QName;
 
-import org.codehaus.stax2.XMLInputFactory2;
-import org.codehaus.stax2.XMLStreamReader2;
+import com.github.philipp94831.stax2parser.DefaultHandler;
 
-public class DumpHandler {
+public class DumpHandler extends DefaultHandler {
 	
-	private XMLStreamReader2 xmlStreamReader;
 	private Stack<String> parents;
 	private StringBuilder buf;
 	private boolean inText = false;
@@ -24,43 +20,13 @@ public class DumpHandler {
 		this.writer = writer;
 	}
 
-	public void parse(InputStream in) throws XMLStreamException {
-		XMLInputFactory2 xmlInputFactory = (XMLInputFactory2) XMLInputFactory2.newFactory();
-		xmlStreamReader = (XMLStreamReader2) xmlInputFactory.createXMLStreamReader(in);
-		parse();
-	}
-
-	private void parse() throws XMLStreamException {
-		startDocument();
-		while(xmlStreamReader.hasNext()) {
-			int eventType = xmlStreamReader.next();
-			switch (eventType) {
-			case XMLEvent.START_ELEMENT:
-				startElement(xmlStreamReader.getName().getLocalPart());
-				break;
-			case XMLEvent.CHARACTERS:
-				characters(xmlStreamReader.getText());
-				break;
-			case XMLEvent.END_ELEMENT:
-				endElement();
-				break;
-			default:
-					break;
-			}
-		}
-		endDocument();
-	}
-
-	private void endDocument() {
-		// TODO Auto-generated method stub
-		
-	}
-
-	private void startDocument() {
+	@Override
+	public void startDocument() {
 		parents = new Stack<>();
 	}
 
-	private void endElement() {
+	@Override
+	public void endElement(QName qname) {
 		if(isInId()) {
 			currentArticle = Long.parseLong(buf.toString());
 		}
@@ -79,14 +45,16 @@ public class DumpHandler {
 		parents.pop();
 	}
 
-	private void characters(String ch) {
+	@Override
+	public void characters(String ch) {
 		if(inText ) {
 			buf .append(ch);
 		}
 	}
 
-	private void startElement(String string) {
-		parents.push(string);
+	@Override
+	public void startElement(QName qname) {
+		parents.push(qname.getLocalPart());
 		if(isInId() || isInContributorId() || isInTimestamp()) {
 			inText = true;
 			buf = new StringBuilder();

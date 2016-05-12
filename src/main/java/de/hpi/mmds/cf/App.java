@@ -18,6 +18,8 @@ import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
+import com.github.philipp94831.stax2parser.Stax2Parser;
+
 public class App {
 
 	public static void main(String[] args) {
@@ -28,6 +30,7 @@ public class App {
 			File out = new File("out.txt");
 			out.delete();
 			DumpHandler handler = new DumpHandler(new DumpWriter(out));
+			Stax2Parser parser = new Stax2Parser(handler);
 			List<Element> files = new ArrayList<>();
 			for (Element element : elements) {
 				String name = element.ownText();
@@ -46,7 +49,7 @@ public class App {
 					FileUtils.copyURLToFile(url, file);
 				}
 				InputStream in = new GZIPInputStream(new FileInputStream(file));
-				handler.parse(in);
+				parser.parse(in);
 				i++;
 			}
 		} catch (FileNotFoundException e) {
