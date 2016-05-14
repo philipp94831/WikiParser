@@ -4,3 +4,5 @@
 .settings/
 out.txt
 /dumps
+*.txt
+.Rhistory

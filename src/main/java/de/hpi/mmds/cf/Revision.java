@@ -1,10 +1,12 @@
 package de.hpi.mmds.cf;
 
+import java.util.Date;
+
 public class Revision {
 	
 	private final long articleId;
 	private long userId;
-	private String timestamp;
+	private Date timestamp;
 	
 	public Revision(long articleId) {
 		this.articleId = articleId;
@@ -22,11 +24,11 @@ public class Revision {
 		this.userId = userId;
 	}
 	
-	public String getTimestamp() {
+	public Date getTimestamp() {
 		return timestamp;
 	}
 	
-	public void setTimestamp(String timestamp) {
+	public void setTimestamp(Date timestamp) {
 		this.timestamp = timestamp;
 	}
 	

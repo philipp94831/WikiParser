@@ -1,5 +1,8 @@
 package de.hpi.mmds.cf;
 
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.Stack;
 
 import javax.xml.namespace.QName;
@@ -13,11 +16,16 @@ public class DumpHandler extends DefaultHandler {
 	private boolean inText = false;
 	private long currentArticle;
 	private Revision currentRevision;
-	private final DumpWriter writer;
+	private final DumpWriter testWriter;
+	private final DumpWriter trainingWriter;
+	private final Date threshold;
+	private final static SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd'T'hh:mm:ss'Z'");
 	
 	
-	public DumpHandler(DumpWriter writer) {
-		this.writer = writer;
+	public DumpHandler(DumpWriter testWriter, DumpWriter trainingWriter, Date threshold) {
+		this.testWriter = testWriter;
+		this.trainingWriter = trainingWriter;
+		this.threshold = threshold;
 	}
 
 	@Override
@@ -34,11 +42,21 @@ public class DumpHandler extends DefaultHandler {
 			currentRevision.setUserId(Long.parseLong(buf.toString()));
 		}
 		if(isInTimestamp()) {
-			currentRevision.setTimestamp(buf.toString());
+			try {
+				Date timestamp = DATE_FORMAT.parse(buf.toString());
+				currentRevision.setTimestamp(timestamp);
+			} catch (ParseException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
 		}
 		if(isInRevision()) {
 			if(currentRevision.getUserId() != 0) {
-				writer.write(currentRevision);
+				if(currentRevision.getTimestamp().compareTo(threshold) < 0) {
+					trainingWriter.write(currentRevision);
+				} else {
+					testWriter.write(currentRevision);
+				}
 			}
 			currentRevision = null;
 		}

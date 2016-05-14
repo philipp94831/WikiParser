@@ -15,10 +15,14 @@ public class DumpWriter {
 
 	public void write(Revision revision) {
 		try {
-			out.write(revision.getArticleId() + "," + revision.getUserId() + "," + revision.getTimestamp() + "\n");
+			out.write(revision.getArticleId() + "," + revision.getUserId() + "\n");
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
+	}
+
+	public void close() throws IOException {
+		out.close();
 	}
 }

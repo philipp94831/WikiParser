@@ -6,7 +6,10 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.zip.GZIPInputStream;
 
@@ -27,9 +30,14 @@ public class App {
 		try {
 			Document raw = Jsoup.connect("https://dumps.wikimedia.org/enwiki/20160407/").get();
 			Elements elements = raw.select("body > ul > li:nth-child(10) > ul > li.file > a");
-			File out = new File("out.txt");
-			out.delete();
-			DumpHandler handler = new DumpHandler(new DumpWriter(out));
+			File test = new File("test.txt");
+			test.delete();
+			File training = new File("training.txt");
+			training.delete();
+			Date threshold = new SimpleDateFormat("dd.MM.yyyy").parse("01.01.2012");
+			DumpWriter testWriter = new DumpWriter(test);
+			DumpWriter trainingWriter = new DumpWriter(training);
+			DumpHandler handler = new DumpHandler(testWriter, trainingWriter, threshold);
 			Stax2Parser parser = new Stax2Parser(handler);
 			List<Element> files = new ArrayList<>();
 			for (Element element : elements) {
@@ -52,6 +60,8 @@ public class App {
 				parser.parse(in);
 				i++;
 			}
+			testWriter.close();
+			trainingWriter.close();
 		} catch (FileNotFoundException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -59,6 +69,9 @@ public class App {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (ParseException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
