@@ -60,8 +60,7 @@ public class App {
 				parser.parse(in);
 				i++;
 			}
-			testWriter.close();
-			trainingWriter.close();
+			handler.close();
 		} catch (FileNotFoundException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();

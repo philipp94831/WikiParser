@@ -1,5 +1,6 @@
 package de.hpi.mmds.cf;
 
+import java.io.IOException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -96,5 +97,10 @@ public class DumpHandler extends DefaultHandler {
 	
 	private boolean isInRevision() {
 		return parents.peek().equals("revision");
+	}
+
+	public void close() throws IOException {
+		testWriter.close();
+		trainingWriter.close();
 	}
 }
