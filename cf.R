@@ -2,7 +2,7 @@ require(recommenderlab)
 
 mod <- 1500
 
-raw <- read.table('training.txt', sep=",")
+raw <- read.table('training5.txt', sep=",")
 raw <- raw[,2:1]
 raw <- raw[raw[,2] %% mod == 0,]
 data <- as(raw, "realRatingMatrix")

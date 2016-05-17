@@ -1,4 +1,4 @@
-package de.hpi.mmds.cf;
+package de.hpi.mmds.cf.parsing;
 
 import java.util.Date;
 

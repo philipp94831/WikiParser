@@ -1,4 +1,4 @@
-package de.hpi.mmds.cf;
+package de.hpi.mmds.cf.parsing;
 
 import java.io.IOException;
 import java.text.ParseException;
@@ -11,7 +11,7 @@ import javax.xml.namespace.QName;
 import com.github.philipp94831.stax2parser.DefaultHandler;
 
 public class DumpHandler extends DefaultHandler {
-	
+
 	private Stack<String> parents;
 	private StringBuilder buf;
 	private boolean inText = false;
@@ -20,9 +20,9 @@ public class DumpHandler extends DefaultHandler {
 	private final DumpWriter testWriter;
 	private final DumpWriter trainingWriter;
 	private final Date threshold;
+	private int currentNamespace;
 	private final static SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd'T'hh:mm:ss'Z'");
-	
-	
+
 	public DumpHandler(DumpWriter testWriter, DumpWriter trainingWriter, Date threshold) {
 		this.testWriter = testWriter;
 		this.trainingWriter = trainingWriter;
@@ -36,13 +36,16 @@ public class DumpHandler extends DefaultHandler {
 
 	@Override
 	public void endElement(QName qname) {
-		if(isInId()) {
+		if (isInId()) {
 			currentArticle = Long.parseLong(buf.toString());
 		}
-		if(isInContributorId()) {
+		if (isInNamespace()) {
+			currentNamespace = Integer.parseInt(buf.toString());
+		}
+		if (isInContributorId()) {
 			currentRevision.setUserId(Long.parseLong(buf.toString()));
 		}
-		if(isInTimestamp()) {
+		if (isInTimestamp()) {
 			try {
 				Date timestamp = DATE_FORMAT.parse(buf.toString());
 				currentRevision.setTimestamp(timestamp);
@@ -51,9 +54,9 @@ public class DumpHandler extends DefaultHandler {
 				e.printStackTrace();
 			}
 		}
-		if(isInRevision()) {
-			if(currentRevision.getUserId() != 0) {
-				if(currentRevision.getTimestamp().compareTo(threshold) < 0) {
+		if (isInRevision()) {
+			if (currentRevision.getUserId() != 0 && currentNamespace == 0) {
+				if (currentRevision.getTimestamp().compareTo(threshold) < 0) {
 					trainingWriter.write(currentRevision);
 				} else {
 					testWriter.write(currentRevision);
@@ -66,21 +69,25 @@ public class DumpHandler extends DefaultHandler {
 
 	@Override
 	public void characters(String ch) {
-		if(inText ) {
-			buf .append(ch);
+		if (inText) {
+			buf.append(ch);
 		}
 	}
 
 	@Override
 	public void startElement(QName qname) {
 		parents.push(qname.getLocalPart());
-		if(isInId() || isInContributorId() || isInTimestamp()) {
+		if (isInId() || isInContributorId() || isInTimestamp() || isInNamespace()) {
 			inText = true;
 			buf = new StringBuilder();
 		}
-		if(isInRevision()) {
+		if (isInRevision()) {
 			currentRevision = new Revision(currentArticle);
 		}
+	}
+
+	private boolean isInNamespace() {
+		return parents.peek().equals("ns") && parents.elementAt(parents.size() - 2).equals("page");
 	}
 
 	private boolean isInContributorId() {
@@ -94,7 +101,7 @@ public class DumpHandler extends DefaultHandler {
 	private boolean isInTimestamp() {
 		return parents.peek().equals("timestamp") && parents.elementAt(parents.size() - 2).equals("revision");
 	}
-	
+
 	private boolean isInRevision() {
 		return parents.peek().equals("revision");
 	}

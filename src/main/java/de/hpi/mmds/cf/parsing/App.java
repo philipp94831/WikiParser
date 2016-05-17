@@ -1,4 +1,4 @@
-package de.hpi.mmds.cf;
+package de.hpi.mmds.cf.parsing;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -11,6 +11,7 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.logging.Logger;
 import java.util.zip.GZIPInputStream;
 
 import javax.xml.stream.XMLStreamException;
@@ -25,18 +26,17 @@ import com.github.philipp94831.stax2parser.Stax2Parser;
 
 public class App {
 
+	private static final Logger LOGGER = Logger.getLogger(App.class.getName());
+
 	public static void main(String[] args) {
 		long start = System.nanoTime();
 		try {
 			Document raw = Jsoup.connect("https://dumps.wikimedia.org/enwiki/20160407/").get();
 			Elements elements = raw.select("body > ul > li:nth-child(10) > ul > li.file > a");
-			File test = new File("test.txt");
-			test.delete();
-			File training = new File("training.txt");
-			training.delete();
 			Date threshold = new SimpleDateFormat("dd.MM.yyyy").parse("01.01.2012");
-			DumpWriter testWriter = new DumpWriter(test);
-			DumpWriter trainingWriter = new DumpWriter(training);
+			new File("raw/").mkdir();
+			DumpWriter testWriter = new DumpWriter("raw/test", 51, 51_000_000L);
+			DumpWriter trainingWriter = new DumpWriter("raw/training", 51, 51_000_000L);
 			DumpHandler handler = new DumpHandler(testWriter, trainingWriter, threshold);
 			Stax2Parser parser = new Stax2Parser(handler);
 			List<Element> files = new ArrayList<>();
@@ -49,7 +49,7 @@ public class App {
 			int i = 1;
 			for (Element element : files) {
 				String name = element.ownText();
-				System.out.println("Parsing file " + i + "/" + files.size() + ": " + name);
+				LOGGER.info("Parsing file " + i + "/" + files.size() + ": " + name);
 				File file = new File("dumps/" + name);
 				if (!file.exists()) {
 					String _url = element.attr("href");
