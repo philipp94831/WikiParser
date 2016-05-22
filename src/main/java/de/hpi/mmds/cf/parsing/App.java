@@ -1,8 +1,10 @@
 package de.hpi.mmds.cf.parsing;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
@@ -10,7 +12,9 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.logging.Logger;
 import java.util.zip.GZIPInputStream;
 
@@ -37,7 +41,17 @@ public class App {
 			new File("raw/").mkdir();
 			DumpWriter testWriter = new DumpWriter("raw/test", 51, 51_000_000L);
 			DumpWriter trainingWriter = new DumpWriter("raw/training", 51, 51_000_000L);
-			DumpHandler handler = new DumpHandler(testWriter, trainingWriter, threshold);
+			Set<Long> bots = new HashSet<>();
+			try (BufferedReader br = new BufferedReader(new FileReader("users.txt"))) {
+			    String line;
+			    while ((line = br.readLine()) != null) {
+			       String[] s = line.split(",");
+			       if(s[1].equals("bot")) {
+			    	   bots.add(Long.parseLong(s[0]));
+			       }
+			    }
+			}
+			DumpHandler handler = new DumpHandler(testWriter, trainingWriter, threshold, bots);
 			Stax2Parser parser = new Stax2Parser(handler);
 			List<Element> files = new ArrayList<>();
 			for (Element element : elements) {

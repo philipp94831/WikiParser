@@ -19,8 +19,8 @@ import org.apache.mahout.cf.taste.similarity.UserSimilarity;
 public class CollaborativeFiltering {
 
 	public static void main(String[] args) throws TasteException {
-		CollaborativeFiltering cf = new CollaborativeFiltering(new File("data.txt"));
-		List<RecommendedItem> recommendations = cf.recommend(1234, 10);
+		CollaborativeFiltering cf = new CollaborativeFiltering(new File("final/training.txt"));
+		List<RecommendedItem> recommendations = cf.recommend(296804, 100);
 		System.out.println(recommendations);
 	}
 	

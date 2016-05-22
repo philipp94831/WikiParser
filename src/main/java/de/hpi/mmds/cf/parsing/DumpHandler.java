@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.Set;
 import java.util.Stack;
 
 import javax.xml.namespace.QName;
@@ -21,12 +22,14 @@ public class DumpHandler extends DefaultHandler {
 	private final DumpWriter trainingWriter;
 	private final Date threshold;
 	private int currentNamespace;
+	private final Set<Long> bots;
 	private final static SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd'T'hh:mm:ss'Z'");
 
-	public DumpHandler(DumpWriter testWriter, DumpWriter trainingWriter, Date threshold) {
+	public DumpHandler(DumpWriter testWriter, DumpWriter trainingWriter, Date threshold, Set<Long> bots) {
 		this.testWriter = testWriter;
 		this.trainingWriter = trainingWriter;
 		this.threshold = threshold;
+		this.bots = bots;
 	}
 
 	@Override
@@ -55,7 +58,7 @@ public class DumpHandler extends DefaultHandler {
 			}
 		}
 		if (isInRevision()) {
-			if (currentRevision.getUserId() != 0 && currentNamespace == 0) {
+			if (currentRevision.getUserId() != 0 && currentNamespace == 0 && !bots.contains(currentRevision.getUserId())) {
 				if (currentRevision.getTimestamp().compareTo(threshold) < 0) {
 					trainingWriter.write(currentRevision);
 				} else {

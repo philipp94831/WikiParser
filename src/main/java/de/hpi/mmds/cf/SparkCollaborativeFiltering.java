@@ -34,7 +34,7 @@ import scala.Tuple2;
 public class SparkCollaborativeFiltering implements Serializable {
 
 	private static final long serialVersionUID = 5290472017062948755L;
-	private static final int RANK = 25;
+	private static final int RANK = 30;
 	private static final int NUM_ITERATIONS = 10;
 	private final MatrixFactorizationModel model;
 	private final Logger logger;
@@ -54,11 +54,11 @@ public class SparkCollaborativeFiltering implements Serializable {
 				String[] sarray = s.split(",");
 				double r = Double.parseDouble(sarray[2]);
 				return new Rating(Integer.parseInt(sarray[0]), Integer.parseInt(sarray[1]),
-						Math.log(Double.parseDouble(sarray[2])));
+						Math.log(Double.parseDouble(sarray[2])) + 1);
 			}
 		});
 		logger.info("Data imported");
-		model = ALS.train(JavaRDD.toRDD(ratings), RANK, NUM_ITERATIONS, 0.01);
+		model = ALS.trainImplicit(JavaRDD.toRDD(ratings), RANK, NUM_ITERATIONS);
 		logger.info("Model trained");
 		try {
 			FileUtils.deleteDirectory(new File(filterDir));
@@ -96,7 +96,7 @@ public class SparkCollaborativeFiltering implements Serializable {
 		SparkConf conf = new SparkConf().setAppName("Java Collaborative Filtering Example").setMaster("local[4]")
 				.set("spark.executor.memory", "2g");
 		try (JavaSparkContext jsc = new JavaSparkContext(conf);) {
-			SparkCollaborativeFiltering cf = new SparkCollaborativeFiltering(jsc, FILTER_DIR, TRAINING_DATA);
+			SparkCollaborativeFiltering cf = new SparkCollaborativeFiltering(jsc, FILTER_DIR);
 			cf.evaluate(jsc, 200);
 			// readConsole(cf);
 		}
@@ -126,9 +126,11 @@ public class SparkCollaborativeFiltering implements Serializable {
 
 	private void evaluate(JavaSparkContext jsc, int num) {
 		JavaPairRDD<Integer, Iterable<Integer>> actual = getUserData(jsc, TEST_DATA);
-		List<Integer> uids = new ArrayList<>(getUserData(jsc, TRAINING_DATA).keys().intersection(actual.keys()).collect());
+		JavaPairRDD<Integer, Iterable<Integer>> previous = getUserData(jsc, TRAINING_DATA);
+		List<Integer> uids = new ArrayList<>(previous.keys().intersection(actual.keys()).collect());
 		int i = 0;
-		double sum = 0.0;
+		double totalPrecision = 0.0;
+		double totalRecall = 0.0;
 		new File(EVAL_FILE).delete();
 		Collections.shuffle(uids, new Random(1L));
 		try (FileWriter out = new FileWriter(EVAL_FILE)) {
@@ -138,30 +140,48 @@ public class SparkCollaborativeFiltering implements Serializable {
 				}
 				List<Integer> recommendations = recommend(user, 100);
 				List<Iterable<Integer>> a = actual.lookup(user);
+				List<Iterable<Integer>> p = previous.lookup(user);
 				Set<Integer> gs = new HashSet<>();
 				for (Iterable<Integer> l : a) {
 					for (Integer j : l) {
 						gs.add(j);
 					}
 				}
-				gs.retainAll(recommendations);
-				double precision = (double) gs.size() / recommendations.size();
-				sum += precision;
-				out.write("User: " + user + "\n");
-				out.write("Recommendations: " + recommendations + "\n");
-				out.write("Matches: " + gs + "\n");
-				out.write("Precision: " + precision + "\n");
-				out.write("AVG Precision: " + sum / ++i + "\n");
-				out.write("Processed: " + i + "\n");
-				out.write("---\n");
-				out.flush();
+				Set<Integer> pr = new HashSet<>();
+				for (Iterable<Integer> l : p) {
+					for (Integer j : l) {
+						pr.add(j);
+					}
+				}
+				gs.removeAll(pr);
+				if (!gs.isEmpty()) {
+					Set<Integer> intersect = new HashSet<>(gs);
+					intersect.retainAll(recommendations);
+					double precision = (double) intersect.size() / recommendations.size();
+					double recall = (double) intersect.size() / gs.size();
+					totalPrecision += precision;
+					totalRecall += recall;
+					i++;
+					out.write("User: " + user + "\n");
+					out.write("Recommendations: " + recommendations + "\n");
+					out.write("Gold standard: " + gs + "\n");
+					out.write("Matches: " + intersect + "\n");
+					out.write("Precision: " + precision + "\n");
+					out.write("AVG Precision: " + totalPrecision / i + "\n");
+					out.write("Recall: " + recall + "\n");
+					out.write("AVG Recall: " + totalRecall / i + "\n");
+					out.write("Processed: " + i + "\n");
+					out.write("---\n");
+					out.flush();
+				}
 			}
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		if(i > 0) {
-			System.out.println("AVG Precision: " + sum / i);
+		if (i > 0) {
+			System.out.println("AVG Precision: " + totalPrecision / i);
+			System.out.println("AVG Recall: " + totalRecall / i);
 		}
 	}
 
