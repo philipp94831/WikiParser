@@ -8,6 +8,8 @@ public class Revision {
 	private long userId;
 	private Date timestamp;
 	private String username;
+	private Integer textLength;
+	private boolean minor = false;
 	
 	public Revision(long articleId) {
 		this.articleId = articleId;
@@ -39,6 +41,22 @@ public class Revision {
 
 	public void setUsername(String username) {
 		this.username = username;
+	}
+
+	public Integer getTextLength() {
+		return textLength;
+	}
+
+	public void setTextLength(Integer textLength) {
+		this.textLength = textLength;
+	}
+
+	public boolean isMinor() {
+		return minor;
+	}
+
+	public void setMinor(boolean minor) {
+		this.minor = minor;
 	}
 	
 	
